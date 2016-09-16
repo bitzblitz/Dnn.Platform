@@ -2760,17 +2760,6 @@ IF (SELECT COUNT(*) FROM {databaseOwner}{objectQualifier}EventLogTypes WHERE Log
 	END
 GO
 
-/* Add new Failed Recipient exception */
-/****************************/
-
-IF (SELECT COUNT(*) FROM {databaseOwner}{objectQualifier}EventLogTypes WHERE LogTypeKey = 'SMTP_FAILED_RECIPIENT_EXCEPTION' ) = 0
-	BEGIN
-		INSERT INTO {databaseOwner}{objectQualifier}EventLogTypes
-			( LogTypeKey, LogTypeFriendlyName, LogTypeDescription, LogTypeOwner, LogTypeCSSClass )
-			VALUES ( 'SMTP_FAILED_RECIPIENT_EXCEPTION', 'SMTP Failed Recipient Exception', '', 'DotNetNuke.Logging.ExceptionLogType', 'Exception' )
-	END
-GO
-
 /* Add GetRoleGroupByName */
 /**************************/
 
