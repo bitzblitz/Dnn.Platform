@@ -1,7 +1,7 @@
 #region Copyright
 // 
 // DotNetNuke® - http://www.dotnetnuke.com
-// Copyright (c) 2002-2016
+// Copyright (c) 2002-2014
 // by DotNetNuke Corporation
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
@@ -143,11 +143,24 @@ namespace DotNetNuke.Services.Mail
                 }
                 catch (SmtpFailedRecipientException exc)
                 {
+										exc.Data.Add("smtpServer", smtpServer);
+										if(smtpAuthentication == "1")
+											{
+											exc.Data.Add("smtpUsername", smtpUsername);
+											exc.Data.Add("smtpPassword", smtpPassword);
+											}
                     retValue = string.Format(Localize.GetString("FailedRecipient"), exc.FailedRecipient);
                     Exceptions.Exceptions.LogException(exc);
                 }
                 catch (SmtpException exc)
                 {
+										exc.Data.Add("smtpServer", smtpServer);
+										exc.Data.Add("mailMessage.Sender", mailMessage.Sender.Address);
+										if(smtpAuthentication == "1")
+											{
+											exc.Data.Add("smtpUsername", smtpUsername);
+											exc.Data.Add("smtpPassword", smtpPassword);
+											}
                     retValue = Localize.GetString("SMTPConfigurationProblem");
                     Exceptions.Exceptions.LogException(exc);
                 }
@@ -208,10 +221,10 @@ namespace DotNetNuke.Services.Mail
 
         public static void SendEmail(string fromAddress, string senderAddress, string toAddress, string subject, string body)
         {
-			if (string.IsNullOrEmpty(Host.SMTPServer) || string.IsNullOrEmpty(fromAddress) || string.IsNullOrEmpty(senderAddress) || string.IsNullOrEmpty(toAddress))
-            {
-                return;
-            }
+					if (string.IsNullOrEmpty(Host.SMTPServer) || string.IsNullOrEmpty(fromAddress) || string.IsNullOrEmpty(senderAddress) || string.IsNullOrEmpty(toAddress))
+							{
+									return;
+							}
 
             var emailMessage = new MailMessage(fromAddress, toAddress) { Sender = new MailAddress(senderAddress) };
 
@@ -302,10 +315,6 @@ namespace DotNetNuke.Services.Mail
                 case MessageType.PasswordReminderUserIsNotApproved:
                     subject = "EMAIL_PASSWORD_REMINDER_USER_ISNOT_APPROVED_SUBJECT";
                     body = "EMAIL_PASSWORD_REMINDER_USER_ISNOT_APPROVED_BODY";
-                    break;
-                case MessageType.UserAuthorized:
-                    subject = "EMAIL_USER_AUTHORIZED_SUBJECT";
-                    body = "EMAIL_USER_AUTHORIZED_BODY";
                     break;
                 default:
                     subject = "EMAIL_USER_UPDATED_OWN_PASSWORD_SUBJECT";
