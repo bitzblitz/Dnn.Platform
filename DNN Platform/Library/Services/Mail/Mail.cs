@@ -143,11 +143,24 @@ namespace DotNetNuke.Services.Mail
                 }
                 catch (SmtpFailedRecipientException exc)
                 {
+										exc.Data.Add("smtpServer", smtpServer);
+										if(smtpAuthentication == "1")
+											{
+											exc.Data.Add("smtpUsername", smtpUsername);
+											exc.Data.Add("smtpPassword", smtpPassword);
+											}
                     retValue = string.Format(Localize.GetString("FailedRecipient"), exc.FailedRecipient);
                     Exceptions.Exceptions.LogException(exc);
                 }
                 catch (SmtpException exc)
                 {
+										exc.Data.Add("smtpServer", smtpServer);
+										exc.Data.Add("mailMessage.Sender", mailMessage.Sender.Address);
+										if(smtpAuthentication == "1")
+											{
+											exc.Data.Add("smtpUsername", smtpUsername);
+											exc.Data.Add("smtpPassword", smtpPassword);
+											}
                     retValue = Localize.GetString("SMTPConfigurationProblem");
                     Exceptions.Exceptions.LogException(exc);
                 }
@@ -208,10 +221,10 @@ namespace DotNetNuke.Services.Mail
 
         public static void SendEmail(string fromAddress, string senderAddress, string toAddress, string subject, string body)
         {
-			if (string.IsNullOrEmpty(Host.SMTPServer) || string.IsNullOrEmpty(fromAddress) || string.IsNullOrEmpty(senderAddress) || string.IsNullOrEmpty(toAddress))
-            {
-                return;
-            }
+					if (string.IsNullOrEmpty(Host.SMTPServer) || string.IsNullOrEmpty(fromAddress) || string.IsNullOrEmpty(senderAddress) || string.IsNullOrEmpty(toAddress))
+							{
+									return;
+							}
 
             var emailMessage = new MailMessage(fromAddress, toAddress) { Sender = new MailAddress(senderAddress) };
 

@@ -39,6 +39,7 @@ using DotNetNuke.Services.Log.EventLog;
 using DotNetNuke.UI.Modules;
 
 using Microsoft.VisualBasic.CompilerServices;
+using System.Net.Mail;
 
 #endregion
 
@@ -51,13 +52,13 @@ namespace DotNetNuke.Services.Exceptions
 	/// <para>
 	/// For most developers, there is a hard problem need to face to is that our product will run on many and many servers with
 	/// much different environment, such as hardware, network, system version, framework version and so on, so there is many of reasons
-	/// will make our application throw lof of exceptions,even will stop our app to working. so when some error occured, we need a way
+	/// will make our application throw lot of exceptions,even will stop our app to working. so when some error occured, we need a way
 	/// to find out the reason, we know we need to log all the exception, but the point is how to log useful information, you should log
 	/// the information what you need to location the code caught the error, but DONOT just log 'ERROR'. so we provide a full support of
-	/// exception log system. when error occured, we can found the detail information in event log and can locationt the error quickly.
+	/// exception log system. when error occurred, we can found the detail information in event log and can location the error quickly.
 	/// </para>
 	/// <para>
-	/// Current we immplement lot of custom exception to use in different levels:
+	/// Current we implement lot of custom exception to use in different levels:
 	/// <list type="bullet">
 	/// <item><see cref="ModuleLoadException"/></item>
 	/// <item><see cref="ObjectHydrationException"/></item>
@@ -471,6 +472,17 @@ namespace DotNetNuke.Services.Exceptions
             Logger.Error(exc);
             var objExceptionLog = new ExceptionLogController();
             objExceptionLog.AddLog(exc, ExceptionLogController.ExceptionLogType.GENERAL_EXCEPTION);
+        }
+
+		/// <summary>
+		/// Logs all the basic exception.
+		/// </summary>
+		/// <param name="exc">The exc.</param>
+        public static void LogException(SmtpFailedRecipientException exc)
+        {
+            Logger.Error(exc);
+            var objExceptionLog = new ExceptionLogController();
+            objExceptionLog.AddLog(exc, ExceptionLogController.ExceptionLogType.SMTP_FAILED_RECIPIENT_EXCEPTION);
         }
 
 		/// <summary>
