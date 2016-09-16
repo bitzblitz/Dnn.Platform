@@ -25,39 +25,41 @@ using System.Web;
 using DotNetNuke.Common;
 using DotNetNuke.Entities.Users;
 using DotNetNuke.Services.Exceptions;
+using System.Net.Mail;
+using System.Collections;
 
 #endregion
 
 namespace DotNetNuke.Services.Log.EventLog
-{
-	public class ExceptionLogController : LogController
 	{
+	public class ExceptionLogController:LogController
+		{
 		#region ExceptionLogType enum
 
 		public enum ExceptionLogType
-		{
+			{
 			GENERAL_EXCEPTION,
 			MODULE_LOAD_EXCEPTION,
 			PAGE_LOAD_EXCEPTION,
 			SCHEDULER_EXCEPTION,
 			SECURITY_EXCEPTION,
 			SEARCH_INDEXER_EXCEPTION,
-			DATA_EXCEPTION
-		}
+			DATA_EXCEPTION,
+			SMTP_FAILED_RECIPIENT_EXCEPTION
+			}
 
 		#endregion
 
 		public void AddLog(Exception objException)
-		{
+			{
 			AddLog(objException, ExceptionLogType.GENERAL_EXCEPTION);
-		}
+			}
 
 		public void AddLog(BasePortalException objBasePortalException)
-		{
-			var log = new LogInfo
 			{
+			var log = new LogInfo {
 				Exception = Exceptions.Exceptions.GetExceptionInfo(objBasePortalException),
-			};
+				};
 			log.Exception.AssemblyVersion = objBasePortalException.AssemblyVersion;
 			log.Exception.PortalId = objBasePortalException.PortalID;
 			log.Exception.UserId = objBasePortalException.UserID;
@@ -65,68 +67,86 @@ namespace DotNetNuke.Services.Log.EventLog
 			log.Exception.RawUrl = objBasePortalException.RawURL;
 			log.Exception.Referrer = objBasePortalException.AbsoluteURLReferrer;
 			log.Exception.UserAgent = objBasePortalException.UserAgent;
-			if (objBasePortalException.GetType().Name == "ModuleLoadException")
-			{
+			if(objBasePortalException.GetType().Name == "ModuleLoadException")
+				{
 				AddLog(objBasePortalException, log, ExceptionLogType.MODULE_LOAD_EXCEPTION);
-			}
-			else if (objBasePortalException.GetType().Name == "PageLoadException")
-			{
+				}
+			else if(objBasePortalException.GetType().Name == "PageLoadException")
+				{
 				AddLog(objBasePortalException, log, ExceptionLogType.PAGE_LOAD_EXCEPTION);
-			}
-			else if (objBasePortalException.GetType().Name == "SchedulerException")
-			{
+				}
+			else if(objBasePortalException.GetType().Name == "SchedulerException")
+				{
 				AddLog(objBasePortalException, log, ExceptionLogType.SCHEDULER_EXCEPTION);
-			}
-			else if (objBasePortalException.GetType().Name == "SecurityException")
-			{
+				}
+			else if(objBasePortalException.GetType().Name == "SecurityException")
+				{
 				AddLog(objBasePortalException, log, ExceptionLogType.SECURITY_EXCEPTION);
-			}
-			else if (objBasePortalException.GetType().Name == "SearchException")
-			{
+				}
+			else if(objBasePortalException.GetType().Name == "SearchException")
+				{
 				AddLog(objBasePortalException, log, ExceptionLogType.SEARCH_INDEXER_EXCEPTION);
-			}
+				}
+			else if(objBasePortalException.GetType().Name == "SmtpFailedRecipientException")
+				{
+				AddLog(objBasePortalException, log, ExceptionLogType.SMTP_FAILED_RECIPIENT_EXCEPTION);
+				}
 			else
-			{
+				{
 				AddLog(objBasePortalException, log, ExceptionLogType.GENERAL_EXCEPTION);
+				}
 			}
-		}
 
 		public void AddLog(Exception objException, ExceptionLogType logType)
-		{
+			{
 			var log = new LogInfo { Exception = new ExceptionInfo(objException) };
 			AddLog(objException, log, logType);
-		}
+			}
 
 		public void AddLog(Exception objException, LogInfo log, ExceptionLogType logType)
-		{
+			{
 			log.LogTypeKey = logType.ToString();
-			if (logType == ExceptionLogType.SEARCH_INDEXER_EXCEPTION)
-			{
-				//Add SearchException Properties
-				var objSearchException = (SearchException)objException;
-				log.LogProperties.Add(new LogDetailInfo("ModuleId", objSearchException.SearchItem.ModuleId.ToString()));
-				log.LogProperties.Add(new LogDetailInfo("SearchItemId", objSearchException.SearchItem.SearchItemId.ToString()));
-				log.LogProperties.Add(new LogDetailInfo("Title", objSearchException.SearchItem.Title));
-				log.LogProperties.Add(new LogDetailInfo("SearchKey", objSearchException.SearchItem.SearchKey));
-				log.LogProperties.Add(new LogDetailInfo("GUID", objSearchException.SearchItem.GUID));
-			}
-			else if (logType == ExceptionLogType.MODULE_LOAD_EXCEPTION)
-			{
-				//Add ModuleLoadException Properties
-				var objModuleLoadException = (ModuleLoadException)objException;
-				log.LogProperties.Add(new LogDetailInfo("ModuleId", objModuleLoadException.ModuleId.ToString()));
-				log.LogProperties.Add(new LogDetailInfo("ModuleDefId", objModuleLoadException.ModuleDefId.ToString()));
-				log.LogProperties.Add(new LogDetailInfo("FriendlyName", objModuleLoadException.FriendlyName));
-				log.LogProperties.Add(new LogDetailInfo("ModuleControlSource", objModuleLoadException.ModuleControlSource));
-			}
-			else if (logType == ExceptionLogType.SECURITY_EXCEPTION)
-			{
-				//Add SecurityException Properties
-				var objSecurityException = (SecurityException)objException;
-				log.LogProperties.Add(new LogDetailInfo("Querystring", objSecurityException.Querystring));
-				log.LogProperties.Add(new LogDetailInfo("IP", objSecurityException.IP));
-			}
-
+			switch(logType)
+				{
+			case ExceptionLogType.SEARCH_INDEXER_EXCEPTION:
+					{
+					//Add SearchException Properties
+					var objSearchException = (SearchException)objException;
+					log.LogProperties.Add(new LogDetailInfo("ModuleId", objSearchException.SearchItem.ModuleId.ToString()));
+					log.LogProperties.Add(new LogDetailInfo("SearchItemId", objSearchException.SearchItem.SearchItemId.ToString()));
+					log.LogProperties.Add(new LogDetailInfo("Title", objSearchException.SearchItem.Title));
+					log.LogProperties.Add(new LogDetailInfo("SearchKey", objSearchException.SearchItem.SearchKey));
+					log.LogProperties.Add(new LogDetailInfo("GUID", objSearchException.SearchItem.GUID));
+					}
+				break;
+			case ExceptionLogType.MODULE_LOAD_EXCEPTION:
+					{
+					//Add ModuleLoadException Properties
+					var objModuleLoadException = (ModuleLoadException)objException;
+					log.LogProperties.Add(new LogDetailInfo("ModuleId", objModuleLoadException.ModuleId.ToString()));
+					log.LogProperties.Add(new LogDetailInfo("ModuleDefId", objModuleLoadException.ModuleDefId.ToString()));
+					log.LogProperties.Add(new LogDetailInfo("FriendlyName", objModuleLoadException.FriendlyName));
+					log.LogProperties.Add(new LogDetailInfo("ModuleControlSource", objModuleLoadException.ModuleControlSource));
+					}
+				break;
+			case ExceptionLogType.SECURITY_EXCEPTION:
+					{
+					//Add SecurityException Properties
+					var objSecurityException = (SecurityException)objException;
+					log.LogProperties.Add(new LogDetailInfo("Querystring", objSecurityException.Querystring));
+					log.LogProperties.Add(new LogDetailInfo("IP", objSecurityException.IP));
+					}
+				break;
+			case ExceptionLogType.SMTP_FAILED_RECIPIENT_EXCEPTION:
+					{
+					var objSmptRecipientException = (SmtpFailedRecipientException)objException;
+					log.LogProperties.Add(new LogDetailInfo("FailedRecipient", objSmptRecipientException.FailedRecipient));
+					log.LogProperties.Add(new LogDetailInfo("StatusCode", Enum.GetName(typeof(System.Net.Mail.SmtpStatusCode), objSmptRecipientException.StatusCode)));
+					}
+				break;
+				}
+			foreach(DictionaryEntry dat in objException.Data)
+				log.LogProperties.Add(new LogDetailInfo(dat.Key.ToString(), dat.Value.ToString()));
 			//Add BasePortalException Properties
 			var objBasePortalException = new BasePortalException(objException.ToString(), objException);
 			log.LogProperties.Add(new LogDetailInfo("AbsoluteURL", objBasePortalException.AbsoluteURL));
@@ -137,11 +157,11 @@ namespace DotNetNuke.Services.Log.EventLog
 
 			//when current user is host user and exception is PageLoadException, try to log the log guid into cookies.
 			//so that this log can be picked and do more action on it later.
-			if (logType == ExceptionLogType.PAGE_LOAD_EXCEPTION && HttpContext.Current != null && UserController.Instance.GetCurrentUserInfo().IsSuperUser)
-			{
-                HttpContext.Current.Response.Cookies.Add(
-                    new HttpCookie("LogGUID", log.LogGUID) { HttpOnly = false, Path = (!string.IsNullOrEmpty(Globals.ApplicationPath) ? Globals.ApplicationPath : "/") });
+			if(logType == ExceptionLogType.PAGE_LOAD_EXCEPTION && HttpContext.Current != null && UserController.Instance.GetCurrentUserInfo().IsSuperUser)
+				{
+				HttpContext.Current.Response.Cookies.Add(
+						new HttpCookie("LogGUID", log.LogGUID) { HttpOnly = false, Path = (!string.IsNullOrEmpty(Globals.ApplicationPath) ? Globals.ApplicationPath : "/") });
+				}
 			}
 		}
 	}
-}
